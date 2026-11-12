@@ -1,18 +1,11 @@
-# Dados baixados (grandes, não versionados)
-dados/
-
-# Python
 __pycache__/
-*.pyc
-.venv/
+.pytest_cache/
 .ipynb_checkpoints/
+.venv/
+models/*.task
+*.pyc
 
 # Documentos locais (não publicar)
 *.docx
-
-# Documentos internos de planejamento
 docs/superpowers/
-
-# Ambiente virtual e área de trabalho do agente
-.venv/
 .superpowers/

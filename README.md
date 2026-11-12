@@ -1,134 +1,143 @@
-# Navegação de pouso lunar por visão computacional
+# Guardião de Quedas
 
-**Global Solution 2026/2 - FIAP · Cognitive Computing, Computer Vision and IoT Systems**\
-Tema da GS: *Space Connect - tecnologia espacial aplicada a desafios reais*
+Detecção de queda de idosos pela webcam, com alerta em tempo real.
+Global Solution 2026.2 (CitizenTech) · Cognitive Computing, Computer Vision and IoT Systems · Prof. Arnaldo Jr.
 
-Uma sonda descendo na Lua não tem GPS. Para pousar com precisão, ela precisa saber onde está usando a própria câmera. Essa técnica é chamada de *Terrain Relative Navigation* e foi usada, por exemplo, no pouso do Perseverance em Marte. Este projeto implementa uma versão simplificada com **processamento de imagem clássico** (OpenCV, sem redes neurais) e **dados reais da NASA/USGS**:
+## Integrantes
 
-1. **Detecção de crateras** na imagem da câmera.
-2. **Localização da sonda**: posição (lat/lon/km) e rumo sobre um mapa de referência.
-
-As duas etapas são **medidas contra gabaritos públicos**: o catálogo de crateras de Robbins e a posição conhecida dos frames simulados.
-
-![demo](resultados/demo.png)
-
-## Resultados principais
-
-- **Crateras:** o detector de sombra e brilho acertou cerca de 4 em cada 10 crateras do catálogo da USGS, e quase 2 em cada 3 marcações dele eram crateras de verdade. O HoughCircles foi bem pior.
-- **Localização:** em 300 imagens de teste, o programa encontrou a posição da sonda em 3 de cada 4, com erro de uns 200 metros. O template matching só funcionou com a imagem sem rotação.
-
-Mais detalhes em [docs/relatorio.pdf](docs/relatorio.pdf) e nos notebooks.
-
-## Como executar
-
-Requisitos: Python 3.11+ (testado no 3.14) e cerca de 120 MB de disco para os dados.
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
-pip install -r requirements.txt
-```
-
-### 1. Baixar os dados (uma vez, de 5 a 10 minutos)
-
-```bash
-python baixar_dados.py
-```
-
-O script baixa para `dados/`, que não é versionada:
-
-| Arquivo | Conteúdo |
+| Nome | RM |
 |---|---|
-| `mapa_regiao.png` | Recorte de 6066 × 6066 px (100 m/px) do mosaico global **LROC WAC** (NASA/LRO), na região de lat −5° a 15° e lon 15° a 35° (borda de Mare Tranquillitatis). O arquivo global tem 5,96 GB, mas o script lê só as linhas e colunas da região, com requisições HTTP *Range* (~37 MB). |
-| `crateras_regiao.csv` | Crateras do **catálogo de Robbins (2018)** na região (lat, lon, diâmetro em km). |
+| Pedro Lima | 553664 |
+| Murilo Fernandes | 553582 |
+| Bruno Furlan | 553604 |
+| Thais Lopes | 553620 |
 
-### 2. Demo da descida
+## Problema
 
-```bash
-python main.py              # localização por ORB
-python main.py --metodo sift
-```
+Quedas são um dos principais riscos para idosos que moram sozinhos, e o tempo até alguém perceber a queda agrava as consequências. O Guardião de Quedas usa uma câmera comum para detectar quando a pessoa cai e permanece no chão, e emite um alerta. Tudo roda no próprio computador: nenhuma imagem é enviada para fora.
 
-A janela mostra dois painéis:
-- **à esquerda**, a câmera da sonda, com as crateras detectadas em amarelo;
-- **à direita**, o minimapa, com a trajetória real (verde), a estimada (vermelho), a área vista pela câmera e o alvo de pouso (ciano).
-
-| Tecla / mouse | Ação |
-|---|---|
-| clique no minimapa | escolhe um novo ponto de pouso |
-| `espaço` | pausa / continua |
-| `d` | liga / desliga a detecção de crateras |
-| `m` | alterna ORB ↔ SIFT |
-| `s` | salva um print em `resultados/demo.png` |
-| `q` / `Esc` | sai |
-
-### 3. Notebooks (análises e métricas)
-
-```bash
-jupyter notebook notebooks/
-```
-
-| Notebook | O que mostra |
-|---|---|
-| `01_dados.ipynb` | O mapa, a divisão ajuste/teste, a distribuição de tamanhos, a direção do sol e o gabarito sobre a imagem |
-| `02_deteccao.ipynb` | Ablação **Hough × sombra-brilho**, escolha de parâmetros e métricas na metade de teste |
-| `03_localizacao.ipynb` | **ORB × SIFT × template matching**, robustez a rotação, zoom, ruído e iluminação, e mar × terras altas |
-
-As figuras e tabelas ficam salvas em `resultados/`.
+Conexão com a GS: tecnologia de apoio a idosos para ampliar autonomia e segurança (ODS 3, 10 e 11).
 
 ## Como funciona
 
-### Detecção de crateras: sombra-brilho
+```mermaid
+flowchart LR
+    A[Webcam ou vídeo] --> B[Pré-processamento<br/>GaussianBlur + equalizeHist no canal V]
+    B --> C[Movimento<br/>MOG2 + morfologia + contornos]
+    B --> D[Pose<br/>MediaPipe PoseLandmarker]
+    C --> E[Regra de queda<br/>OK → SUSPEITA → QUEDA]
+    D --> E
+    E --> F[Alerta na tela + results/eventos.csv]
+```
 
-Com o sol baixo, uma cratera pequena aparece como **uma mancha escura** (a parede do lado do sol, em sombra) **colada a uma mancha clara** (a parede oposta, iluminada).
+A cada quadro o sistema mede:
 
-| Etapa | Técnica |
-|---|---|
-| Suavização | Blur gaussiano 3×3 |
-| Sombra / brilho | Limiar **local**: o pixel fica 18 níveis abaixo (sombra) ou acima (brilho) da média de uma janela 21×21 |
-| Limpeza | Abertura morfológica, com elemento elíptico 3×3 |
-| Manchas | Componentes conectados e centroides (momentos) |
-| Pareamento | Cada sombra se liga ao brilho mais próximo **na direção do sol** (±40°), que precisa estar próximo e ter área parecida |
-| Cratera | Centro no meio do par, raio = 0,8 × a distância entre os centroides |
+- **ângulo do tronco** em relação à vertical (0° em pé, 90° deitado), a partir de ombros e quadris;
+- **altura do quadril** na imagem;
+- **fração de pixels em movimento** (máscara do MOG2).
 
-A direção do sol foi medida nos dados: em 97% das crateras do catálogo, a metade oeste é mais escura. O **HoughCircles** (com CLAHE) também foi implementado e comparado. Ele perde porque as crateras pequenas não formam um contorno circular fechado (notebook 02).
+Regra de decisão:
 
-### Localização: features + homografia
+1. **SUSPEITA**: o quadril desce 15% ou mais da altura da imagem em até 1 s, com movimento na cena.
+2. **QUEDA**: durante a suspeita, o tronco fica com 55° ou mais por 1 s seguido.
+3. Se em 3 s o tronco não deitar, a suspeita é descartada (ex.: a pessoa só sentou).
+4. O alerta termina quando o tronco volta a menos de 40° por 1 s.
 
-| Etapa | Técnica |
-|---|---|
-| Normalização | Equalização de histograma do mapa e do frame |
-| Pontos característicos | **ORB** (ou SIFT) |
-| Casamento | `knnMatch` (k = 2) com **teste da razão de Lowe** (0,75) |
-| Geometria | `findHomography` com **RANSAC** (5 px, no mínimo 15 inliers) |
-| Posição e rumo | Centro do frame projetado pela homografia; ângulo da sua parte linear |
-| Comparação | `matchTemplate` (`TM_CCOEFF_NORMED`) |
-| Rastreamento | Depois da 1ª localização, busca só numa janela em volta da última posição |
+Sentar rápido, agachar, abaixar para pegar algo e deitar devagar não disparam alerta, porque falta uma das duas condições.
 
-### Câmera simulada
+## Conteúdo dos labs utilizado
 
-Não existem imagens públicas de descida sobre o mesmo mapa com a posição exata, então a câmera é **simulada**. Cada frame é um recorte do mapa com posição, rotação e zoom conhecidos, mais ruído, blur e mudanças de brilho e gama (`simulador.py`). A posição real conhecida é o gabarito da localização.
+| Lab | Conteúdo | Onde |
+|---|---|---|
+| 01 | Leitura e exibição de imagem/vídeo com OpenCV | `src/app.py` |
+| 03 | Equalização de histograma | `src/preprocessamento.py` |
+| 04 | Filtro gaussiano e limiarização | `src/preprocessamento.py`, `src/movimento.py` |
+| 05 | Espaço de cor HSV e contornos | `src/preprocessamento.py`, `src/movimento.py` |
+| 06 | Morfologia (abertura e fechamento) | `src/movimento.py` |
+| 07 | Subtração de fundo MOG2 e bounding box | `src/movimento.py` |
+| 13 | MediaPipe (Tasks API, modo VIDEO) | `src/pose.py` |
+
+## Instalação
+
+Requer Python 3.10 ou superior.
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/macOS
+pip install -r requirements.txt
+```
+
+O modelo de pose (`pose_landmarker_lite.task`) é baixado sozinho para `models/` na primeira execução.
+
+## Execução
+
+Todos os comandos são executados na raiz do repositório.
+
+```bash
+# Tempo real pela webcam (Esc para sair)
+python -m src.app
+
+# Outra câmera, modelo mais preciso, janela com a máscara de movimento
+python -m src.app --fonte 1 --modelo heavy --mascara
+
+# Rodar em um vídeo gravado
+python -m src.app --fonte data/clips/queda/queda_lado_01.mp4
+
+# Testes da regra de decisão, das métricas e do movimento
+python -m pytest -q
+```
+
+Dica para a demonstração: câmera **de lado** para a área, pessoa de corpo inteiro no quadro, a uns 3 m.
+
+## Avaliação
+
+1. Grave clipes curtos (5 a 10 s) e coloque em:
+   - `data/clips/queda/`: quedas simuladas (de lado, para frente, para trás);
+   - `data/clips/nao_queda/`: sentar rápido, agachar, pegar objeto no chão, deitar devagar, andar.
+2. Rode a avaliação e gere o relatório:
+
+```bash
+python -m src.avaliar
+python -m src.gerar_relatorio
+```
+
+Saídas em `results/`:
+
+- `resultados.csv`: resultado por clipe, com e sem pré-processamento;
+- `metricas.json`: matriz de confusão, acurácia, precisão, recall, F1, especificidade, FPS e taxa de pose;
+- `matriz_confusao_*.png`, `comparacao_metricas.png`;
+- `curvas/`: ângulo do tronco e altura do quadril ao longo do tempo, por clipe.
+
+O notebook `notebooks/analise_resultados.ipynb` mostra as tabelas e os gráficos.
+
+## Resultados
+
+> Preencher depois de rodar `python -m src.avaliar` com os clipes da equipe: copie a tabela de `results/metricas.json` e insira as figuras de `results/`.
 
 ## Estrutura
 
 ```
-baixar_dados.py        baixa o recorte do mosaico e o catálogo
-main.py                demo da descida
-pouso_lunar/
-  config.py            todos os parâmetros, com a justificativa de cada valor
-  geo.py               lat/lon → pixel (projeção equiretangular)
-  dados.py             carrega o mapa e o gabarito, divide ajuste/teste
-  detector.py          detectores sombra-brilho e Hough
-  localizador.py       ORB/SIFT + homografia; template matching
-  simulador.py         câmera da sonda e trajetória de descida
-  metricas.py          compara as detecções com o catálogo e calcula o erro em km
-  visual.py            desenho dos painéis e do minimapa
-notebooks/             análises (01 dados, 02 detecção, 03 localização)
-resultados/            figuras e CSVs de métricas gerados pelos notebooks
-docs/relatorio.pdf     relatório da GS
+src/
+  preprocessamento.py   filtro e equalização
+  movimento.py          MOG2, morfologia, contornos
+  pose.py               MediaPipe PoseLandmarker
+  regras_queda.py       máquina de estados da queda
+  pipeline.py           junta as etapas e desenha o resultado
+  app.py                aplicação em tempo real
+  avaliar.py            métricas e gráficos nos clipes
+  metricas.py           matriz de confusão e métricas
+  gerar_relatorio.py    gera docs/relatorio.pdf
+tests/                  testes automatizados
+notebooks/              análise dos resultados
+docs/relatorio.pdf      relatório (contexto, métodos, análises, considerações finais)
+data/clips/             clipes de avaliação
+results/                saídas da avaliação e log de eventos
 ```
 
-## Créditos dos dados
+## Limitações
 
-- **LROC WAC Global Morphologic Mosaic 100 m** (NASA / LRO / Arizona State University), distribuído pela USGS Astrogeology.
-- **Robbins, S. J. (2019)**. *A new global database of lunar impact craters > 1-2 km: 1. Crater locations and sizes, comparisons with published databases, and global analysis.* JGR Planets, 124. doi:10.1029/2018JE005592. Distribuído pela USGS Astrogeology.
+- Quedas na direção da câmera alteram pouco o ângulo do tronco em 2D.
+- A medida de descida depende da distância da pessoa à câmera.
+- Uma pessoa por vez, com ombros e quadris visíveis.
+- As quedas de teste são simuladas e o conjunto é pequeno.
