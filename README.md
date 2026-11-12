@@ -91,12 +91,6 @@ jupyter notebook notebooks/
 
 As figuras e tabelas ficam salvas em `resultados/`.
 
-### 4. Testes (sem internet e sem dados)
-
-```bash
-python -m tests.test_offline
-```
-
 ## Como funciona
 
 ### Detecção de crateras: sombra-brilho
@@ -137,7 +131,7 @@ baixar_dados.py        baixa o recorte do mosaico e o catálogo
 main.py                demo da descida
 pouso_lunar/
   config.py            todos os parâmetros, com a justificativa de cada valor
-  geo.py               lat/lon ↔ pixel (projeção equiretangular)
+  geo.py               lat/lon → pixel (projeção equiretangular)
   dados.py             carrega o mapa e o gabarito, divide ajuste/teste
   detector.py          detectores sombra-brilho e Hough
   localizador.py       ORB/SIFT + homografia; template matching
@@ -147,7 +141,6 @@ pouso_lunar/
 notebooks/             análises (01 dados, 02 detecção, 03 localização)
 resultados/            figuras e CSVs de métricas gerados pelos notebooks
 docs/relatorio.pdf     relatório da GS
-tests/                 testes offline com imagens sintéticas
 ```
 
 ## Créditos dos dados

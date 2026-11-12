@@ -46,12 +46,3 @@ def latlon_para_px(lat, lon, info: MapaInfo):
     if np.isscalar(lat) and np.isscalar(lon):
         return float(x), float(y)
     return x, y
-
-
-def px_para_latlon(x, y, info: MapaInfo):
-    """(x, y) em pixels → (lat, lon) em graus. Inversa de latlon_para_px."""
-    lon = info.lon_min + np.asarray(x, dtype=float) / info.px_por_grau
-    lat = info.lat_max - np.asarray(y, dtype=float) / info.px_por_grau
-    if np.isscalar(x) and np.isscalar(y):
-        return float(lat), float(lon)
-    return lat, lon

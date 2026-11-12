@@ -5,5 +5,3 @@ matplotlib
 jupyter
 nbconvert
 ipykernel
-pytest
-markdown-pdf
