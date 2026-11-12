@@ -1,20 +1,9 @@
-"""Baixa os dados públicos usados no projeto para a pasta dados/.
-
-1. Recorte da região de estudo do mosaico global LROC WAC (NASA/LRO), lido
-   por requisições HTTP Range: só ~37 MB dos 5,96 GB do arquivo global.
-2. Catálogo de crateras de Robbins (2018), filtrado para a região de estudo.
-
-Uso:
-    python baixar_dados.py
-"""
-
 from concurrent.futures import ThreadPoolExecutor
 import io
 import json
 import math
 import os
 from pathlib import Path
-import shutil
 import struct
 import sys
 import time
@@ -32,8 +21,6 @@ AGENTE = {"User-Agent": "pouso-lunar-gs-fiap/1.0"}
 TENTATIVAS = 4
 
 
-# ------------------------------------------------------------------ HTTP
-
 def _abrir(url: str, inicio: int | None = None, fim: int | None = None):
     cab = dict(AGENTE)
     if inicio is not None:
@@ -42,7 +29,7 @@ def _abrir(url: str, inicio: int | None = None, fim: int | None = None):
 
 
 def _ler_intervalo(url: str, inicio: int, fim: int) -> bytes:
-    """Lê os bytes [inicio, fim] (inclusive), com novas tentativas."""
+    # baixa só um pedaço do arquivo (do byte inicio até o fim), tentando de novo se falhar
     for tentativa in range(TENTATIVAS):
         try:
             with _abrir(url, inicio, fim) as r:
@@ -54,11 +41,10 @@ def _ler_intervalo(url: str, inicio: int, fim: int) -> bytes:
             if tentativa == TENTATIVAS - 1:
                 raise
             time.sleep(1.5 * (tentativa + 1))
-    raise AssertionError("inalcançável")
+    raise AssertionError("não deveria chegar aqui")
 
 
 def urllib_fetch(url: str, arquivo) -> None:
-    """Copia o conteúdo de `url` para o arquivo aberto, mostrando o progresso."""
     with _abrir(url) as r:
         total = int(r.headers.get("Content-Length") or 0)
         lido = 0
@@ -68,17 +54,13 @@ def urllib_fetch(url: str, arquivo) -> None:
             if total:
                 print(f"\r  {lido / 1e6:6.1f} / {total / 1e6:.1f} MB", end="", flush=True)
     print()
-    # Se a conexão cair, a leitura termina "normalmente", só que mais cedo.
+    # se a internet cair, o download termina antes sem dar erro, então conferimos o tamanho
     if total and lido != total:
         raise IOError(f"download incompleto: {lido} de {total} bytes")
 
 
 def baixar_arquivo(url: str, destino: Path, buscar=urllib_fetch) -> None:
-    """Baixa para `<destino>.part` e só renomeia quando terminar.
-
-    Se a conexão cair no meio, o arquivo final não existe: um download
-    corrompido nunca é confundido com um completo.
-    """
+    # salva como .part e só renomeia no final, assim um download pela metade não vira o arquivo final
     destino = Path(destino)
     parcial = destino.with_suffix(destino.suffix + ".part")
     with open(parcial, "wb") as f:
@@ -86,21 +68,16 @@ def baixar_arquivo(url: str, destino: Path, buscar=urllib_fetch) -> None:
     os.replace(parcial, destino)
 
 
-# --------------------------------------------------------------- mosaico
-
 def _url_final(url: str) -> str:
-    """Resolve o redirecionamento uma vez (planetarymaps → S3)."""
+    # o link da USGS redireciona para outro servidor; pegamos o endereço final uma vez só
     with _abrir(url, 0, 0) as r:
         return r.geturl()
 
 
 def baixar_regiao_mosaico(destino_png: Path, destino_json: Path) -> None:
-    """Baixa só as linhas/colunas da região de estudo do BigTIFF global.
-
-    O arquivo não tem compressão e guarda 1 linha por strip; a tabela
-    StripOffsets diz onde cada linha começa. Então o pixel (linha r, coluna c)
-    está no byte offset[r] + c, e cada linha do recorte é uma requisição Range.
-    """
+    # O mosaico inteiro tem quase 6 GB. Como ele não é comprimido e cada linha da
+    # imagem fica num lugar conhecido do arquivo, dá para baixar só as linhas e
+    # colunas da nossa região.
     ppg = config.PX_POR_GRAU_NATIVO
     r0 = math.floor((90.0 - config.LAT_MAX) * ppg)
     r1 = math.ceil((90.0 - config.LAT_MIN) * ppg)
@@ -110,6 +87,8 @@ def baixar_regiao_mosaico(destino_png: Path, destino_json: Path) -> None:
     print(f"Mosaico: recorte de {largura} x {altura} px (linhas {r0}-{r1}, colunas {c0}-{c1})")
 
     url = _url_final(config.URL_MOSAICO)
+
+    # tabela que diz em qual byte começa cada linha da imagem
     tab = config.MOSAICO_OFFSET_TABELA_STRIPS
     bruto = _ler_intervalo(url, tab + 8 * r0, tab + 8 * r1 - 1)
     offsets = struct.unpack(f"<{altura}Q", bruto)
@@ -121,6 +100,7 @@ def baixar_regiao_mosaico(destino_png: Path, destino_json: Path) -> None:
         img[i] = np.frombuffer(_ler_intervalo(url, ini, ini + largura - 1), dtype=np.uint8)
         return i
 
+    # baixa 16 linhas ao mesmo tempo para ir mais rápido
     with ThreadPoolExecutor(16) as pool:
         for n, _ in enumerate(pool.map(baixar_linha, range(altura)), 1):
             if n % 250 == 0 or n == altura:
@@ -132,6 +112,7 @@ def baixar_regiao_mosaico(destino_png: Path, destino_json: Path) -> None:
         raise IOError(f"não consegui gravar {temp}")
     os.replace(temp, destino_png)
 
+    # guarda onde o recorte fica na Lua, para converter lat/lon em pixel depois
     info = {
         "lat_max": 90.0 - r0 / ppg,
         "lon_min": -180.0 + c0 / ppg,
@@ -142,11 +123,8 @@ def baixar_regiao_mosaico(destino_png: Path, destino_json: Path) -> None:
     destino_json.write_text(json.dumps(info, indent=2), encoding="utf-8")
 
 
-# -------------------------------------------------------------- catálogo
-
 def gravar_csv_atomico(df: pd.DataFrame, destino: Path) -> None:
-    """Grava em <destino>.tmp e renomeia: um CSV truncado nunca fica com o nome final
-    (senão a próxima execução diria "já existe, pulando" e manteria o arquivo quebrado)."""
+    # mesma ideia do .part: se der erro no meio, não fica um CSV pela metade
     destino = Path(destino)
     temp = destino.with_suffix(destino.suffix + ".tmp")
     try:
@@ -158,11 +136,7 @@ def gravar_csv_atomico(df: pd.DataFrame, destino: Path) -> None:
 
 
 def filtrar_catalogo(df: pd.DataFrame, lat_min, lat_max, lon_min, lon_max) -> pd.DataFrame:
-    """Normaliza a longitude e mantém as crateras da região (com 1° de margem).
-
-    A margem garante que crateras cortadas pela borda do mapa ainda entrem
-    no gabarito; o corte exato acontece em dados.carregar_gabarito().
-    """
+    # fica só com as crateras da região (com 1 grau de folga nas bordas)
     lat = df["LAT_CIRC_IMG"].astype(float)
     lon = normalizar_lon(df["LON_CIRC_IMG"].astype(float).to_numpy())
     m = 1.0
@@ -194,8 +168,6 @@ def baixar_catalogo(destino_csv: Path) -> int:
     zip_path.unlink()
     return len(regiao)
 
-
-# ----------------------------------------------------------------- main
 
 def main() -> int:
     pasta = config.PASTA_DADOS

@@ -1,12 +1,7 @@
-"""Desenho da demo: crateras, painel lado a lado e minimapa com as trajetórias.
-
-Obs.: as fontes Hershey do OpenCV não têm acentos, por isso os textos
-desenhados na imagem são escritos sem acentuação.
-"""
-
 import cv2
 import numpy as np
 
+# cores em BGR (o OpenCV usa azul, verde, vermelho)
 VERDE = (0, 200, 0)
 VERMELHO = (0, 0, 255)
 CIANO = (255, 255, 0)
@@ -26,21 +21,19 @@ def desenhar_crateras(img_bgr: np.ndarray, circulos, cor=AMARELO) -> np.ndarray:
 
 
 def escrever(img: np.ndarray, texto: str, pos, cor=BRANCO, escala: float = 0.55) -> None:
+    # a fonte do OpenCV não tem acento, por isso os textos da tela vão sem acento
     cv2.putText(img, texto, pos, cv2.FONT_HERSHEY_SIMPLEX, escala, cor, 1, cv2.LINE_AA)
 
 
 def caixa_escura(img: np.ndarray, x0: int, y0: int, x1: int, y1: int, alfa: float = 0.55) -> None:
-    """Escurece um retângulo (fundo do texto), legível sobre qualquer terreno.
-
-    (Um contorno preto mais grosso que o texto fica deslocado na fonte do OpenCV 5.)
-    """
+    # escurece o fundo atrás do texto para dar para ler
     roi = img[y0:y1, x0:x1]
     roi[:] = (roi * (1 - alfa)).astype(img.dtype)
 
 
 def montar_painel(frame_bgr: np.ndarray, minimapa_bgr: np.ndarray, textos: list[str],
                   cores: list | None = None) -> np.ndarray:
-    """Frame à esquerda, minimapa à direita (mesma altura), textos no canto do frame."""
+    # câmera à esquerda, minimapa à direita e os textos no canto
     esq = em_bgr(frame_bgr)
     dir_ = em_bgr(minimapa_bgr)
     if dir_.shape[0] != esq.shape[0]:
@@ -56,7 +49,7 @@ def montar_painel(frame_bgr: np.ndarray, minimapa_bgr: np.ndarray, textos: list[
 
 
 class Minimapa:
-    """Versão reduzida do mapa, com conversão de coordenadas nos dois sentidos."""
+    # mapa em tamanho pequeno, com conversão de coordenadas entre ele e o mapa grande
 
     def __init__(self, mapa: np.ndarray, lado: int = 480):
         self.lado = lado
@@ -71,10 +64,9 @@ class Minimapa:
         return u / self.sx, v / self.sy
 
     def desenhar(self, traj_real, traj_est, alvo, quadro=None) -> np.ndarray:
-        """Trajetória real (verde), estimada (vermelho), alvo (ciano) e o
-        contorno da área vista pela câmera (`quadro`: 4 cantos em px do mapa)."""
+        # caminho real em verde, caminho encontrado em vermelho, alvo em ciano
+        # e o quadrado amarelo mostra o que a câmera está vendo
         img = self.base.copy()
-        # a real vai por baixo e mais grossa: quando a estimativa é boa, as duas se sobrepõem
         for traj, cor, esp in ((traj_real, VERDE, 4), (traj_est, VERMELHO, 1)):
             pts = [self.para_mini(x, y) for x, y in traj if np.isfinite(x) and np.isfinite(y)]
             if len(pts) >= 2:

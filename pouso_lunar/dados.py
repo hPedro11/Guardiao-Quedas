@@ -1,5 +1,3 @@
-"""Carrega o mapa de trabalho e o gabarito de crateras (em pixels)."""
-
 import json
 from typing import Literal
 
@@ -23,10 +21,6 @@ def _exigir(caminho):
 
 
 def carregar_mapa(escala: float | None = None) -> tuple[np.ndarray, MapaInfo]:
-    """Lê o recorte do mosaico (tons de cinza) e o redimensiona por `escala`.
-
-    INTER_AREA faz a média dos pixels ao reduzir, evitando serrilhado (aliasing).
-    """
     escala = config.ESCALA_MAPA if escala is None else escala
     pasta = config.PASTA_DADOS
     p_img, p_info = pasta / ARQ_MAPA, pasta / ARQ_INFO
@@ -39,6 +33,7 @@ def carregar_mapa(escala: float | None = None) -> tuple[np.ndarray, MapaInfo]:
         larg = round(img.shape[1] * escala)
         alt = round(img.shape[0] * escala)
         img = cv2.resize(img, (larg, alt), interpolation=cv2.INTER_AREA)
+    # ao diminuir o mapa, os pixels por grau diminuem junto
     fator = img.shape[1] / meta["largura"]
     info = MapaInfo(
         lat_max=meta["lat_max"],
@@ -52,13 +47,7 @@ def carregar_mapa(escala: float | None = None) -> tuple[np.ndarray, MapaInfo]:
 
 def carregar_gabarito(info: MapaInfo, diam_min_px: float | None = None,
                       diam_max_px: float | None = None) -> pd.DataFrame:
-    """Catálogo de Robbins convertido para pixels do mapa de `info`.
-
-    Colunas: x, y, r_px, diam_km. Só ficam as crateras com centro dentro do
-    mapa e diâmetro entre `diam_min_px` (as menores não são resolvidas pela
-    imagem) e `diam_max_px` (o catálogo inclui bacias de centenas de km, que
-    não aparecem como círculo em nenhum frame da câmera).
-    """
+    # crateras do catálogo convertidas para pixels do mapa (colunas x, y, r_px, diam_km)
     diam_min_px = config.DIAM_MIN_PX if diam_min_px is None else diam_min_px
     diam_max_px = config.DIAM_MAX_PX if diam_max_px is None else diam_max_px
     p = config.PASTA_DADOS / ARQ_CRATERAS
@@ -74,12 +63,8 @@ def carregar_gabarito(info: MapaInfo, diam_min_px: float | None = None,
 
 
 def metade(obj, info: MapaInfo, qual: Literal["ajuste", "teste"]):
-    """Separa pela coordenada x: metade oeste = ajuste, metade leste = teste.
-
-    Os parâmetros são escolhidos olhando só o "ajuste"; as métricas finais são
-    reportadas no "teste", que o ajuste nunca viu (validação honesta).
-    Aceita DataFrame (coluna x) ou array N×k (coluna 0 = x).
-    """
+    # Divide o mapa ao meio: a metade oeste ("ajuste") serve para escolher os
+    # parâmetros e a leste ("teste") para conferir o resultado.
     xs = obj["x"].to_numpy() if isinstance(obj, pd.DataFrame) else np.asarray(obj)[:, 0]
     meio = info.largura / 2.0
     m = xs < meio if qual == "ajuste" else xs >= meio

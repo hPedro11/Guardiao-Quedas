@@ -1,18 +1,3 @@
-"""Demo: descida simulada de uma sonda lunar com detecção de crateras e localização.
-
-Uso:
-    python main.py [--metodo orb|sift] [--semente N]
-
-Teclas:
-    espaço  pausa / continua
-    d       liga / desliga a detecção de crateras
-    m       alterna o método de localização (ORB <-> SIFT)
-    s       salva um print em resultados/demo.png
-    q, Esc  sai
-
-Mouse: clique no minimapa (direita) para escolher um novo ponto de pouso.
-"""
-
 import argparse
 import sys
 import time
@@ -61,26 +46,27 @@ class Demo:
         self.traj = trajetoria_descida(inicio, self.alvo, n_frames=n, zoom_ini=zoom_ini,
                                        giro_total_graus=float(self.rng.uniform(-60, 60)),
                                        largura=larg, altura=alt, tam=self.tam)
-        # Um alvo clicado perto da borda é preso à área onde a câmera cabe:
-        # o marcador mostra onde a sonda realmente vai pousar.
+        # se o alvo clicado for muito na borda, usa o ponto mais próximo onde a sonda consegue chegar
         self.alvo = self.traj[-1][:2]
         self.i = 0
         self.real, self.est = [], []
         self.ultimo_ok = None
 
     def ao_clicar(self, evento, u, v, flags, _):
+        # clique no minimapa (lado direito da janela) escolhe um novo ponto de pouso
         if evento == cv2.EVENT_LBUTTONDOWN and u >= self.tam:
             self.novo_alvo = self.mini.para_mapa(u - self.tam, v)
 
     def _localizar(self, frame, zoom):
         if self.ultimo_ok is not None:
-            # Rastreamento: procura só perto da última posição conhecida (mais rápido).
+            # se achou no quadro anterior, procura só ali perto (fica mais rápido)
             lx, ly = self.ultimo_ok
             m = 1.5 * self.tam / zoom
             r = self.loc.localizar(frame, janela=(int(lx - m), int(ly - m), int(lx + m), int(ly + m)))
             if r.ok:
                 return r
-        return self.loc.localizar(frame)  # perdido: busca no mapa inteiro
+        # senão, procura no mapa inteiro
+        return self.loc.localizar(frame)
 
     def passo(self):
         if self.novo_alvo is not None:
@@ -96,8 +82,8 @@ class Demo:
         r = self._localizar(frame, zoom)
         crateras = np.zeros((0, 3))
         if self.detectar:
-            # Os raios crescem com o zoom da câmera, e a direção do sol na
-            # imagem gira junto com a sonda (atitude conhecida pela IMU).
+            # quanto mais baixa a sonda, maiores as crateras na imagem; e como a
+            # câmera gira, a direção do sol na imagem gira junto
             p = ParamsDeteccao(**config.PARAMS_DETECCAO)
             pz = ParamsDeteccao(**{**p.__dict__,
                                    "r_min": max(3, round(p.r_min * zoom)),
@@ -134,6 +120,8 @@ class Demo:
         return painel
 
     def rodar(self):
+        # teclas: espaço pausa, d liga/desliga as crateras, m troca ORB/SIFT,
+        # s salva um print e q (ou Esc) fecha
         cv2.namedWindow(JANELA, cv2.WINDOW_AUTOSIZE)
         cv2.setMouseCallback(JANELA, self.ao_clicar)
         painel = self.passo()
