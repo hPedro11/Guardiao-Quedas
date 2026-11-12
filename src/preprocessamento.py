@@ -1,4 +1,4 @@
-"""Pre-processamento do quadro: Labs 03 (equalizacao), 04 (filtro) e 05 (espaco de cor)."""
+"""Pre-processamento do quadro: filtro gaussiano e equalizacao do brilho (canal V do HSV)."""
 import cv2
 
 

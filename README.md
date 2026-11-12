@@ -45,17 +45,17 @@ Regra de decisão:
 
 Sentar rápido, agachar, abaixar para pegar algo e deitar devagar não disparam alerta, porque falta uma das duas condições.
 
-## Conteúdo dos labs utilizado
+## Técnicas utilizadas
 
-| Lab | Conteúdo | Onde |
-|---|---|---|
-| 01 | Leitura e exibição de imagem/vídeo com OpenCV | `src/app.py` |
-| 03 | Equalização de histograma | `src/preprocessamento.py` |
-| 04 | Filtro gaussiano e limiarização | `src/preprocessamento.py`, `src/movimento.py` |
-| 05 | Espaço de cor HSV e contornos | `src/preprocessamento.py`, `src/movimento.py` |
-| 06 | Morfologia (abertura e fechamento) | `src/movimento.py` |
-| 07 | Subtração de fundo MOG2 e bounding box | `src/movimento.py` |
-| 13 | MediaPipe (Tasks API, modo VIDEO) | `src/pose.py` |
+| Técnica | Onde |
+|---|---|
+| Leitura e exibição de vídeo com OpenCV | `src/app.py` |
+| Equalização de histograma | `src/preprocessamento.py` |
+| Filtro gaussiano e limiarização | `src/preprocessamento.py`, `src/movimento.py` |
+| Espaço de cor HSV e contornos | `src/preprocessamento.py`, `src/movimento.py` |
+| Morfologia (abertura e fechamento) | `src/movimento.py` |
+| Subtração de fundo MOG2 e bounding box | `src/movimento.py` |
+| MediaPipe PoseLandmarker (Tasks API, modo VIDEO) | `src/pose.py` |
 
 ## Instalação
 

@@ -1,4 +1,4 @@
-"""Estimativa de pose com MediaPipe Tasks API (Lab 13)."""
+"""Estimativa de pose com MediaPipe Tasks API."""
 from pathlib import Path
 from urllib.request import urlretrieve
 

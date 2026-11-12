@@ -1,4 +1,4 @@
-"""Deteccao de movimento: Lab 07 (MOG2), Lab 06 (morfologia) e Lab 05 (contornos)."""
+"""Deteccao de movimento: subtracao de fundo MOG2, morfologia e contornos."""
 import cv2
 import numpy as np
 

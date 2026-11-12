@@ -117,14 +117,13 @@ def main():
             "ou botão de pânico."),
           h("3. Métodos")]
     c += [tabela([
-        ["Etapa", "Técnica", "Lab"],
-        ["Pre-processamento", "Filtro gaussiano 5x5 e equalização de histograma do canal V (HSV)",
-         "03, 04, 05"],
+        ["Etapa", "Técnica"],
+        ["Pré-processamento", "Filtro gaussiano 5x5 e equalização de histograma do canal V (HSV)"],
         ["Movimento", "Subtração de fundo MOG2, limiar para remover sombras, abertura e "
-         "fechamento morfológicos, maior contorno e boundingRect", "05, 06, 07"],
-        ["Pose", "MediaPipe PoseLandmarker (Tasks API, modo VIDEO): ombros e quadris", "13"],
-        ["Decisão", "Máquina de estados OK -> SUSPEITA -> QUEDA", "-"],
-    ], [3.6 * cm, 10.9 * cm, 2.2 * cm]), Spacer(1, 8),
+         "fechamento morfológicos, maior contorno e boundingRect"],
+        ["Pose", "MediaPipe PoseLandmarker (Tasks API, modo VIDEO): ombros e quadris"],
+        ["Decisão", "Máquina de estados OK -> SUSPEITA -> QUEDA"],
+    ], [3.6 * cm, 13.1 * cm]), Spacer(1, 8),
           p("<b>Medidas por quadro.</b> A partir do ponto médio dos ombros e do ponto médio "
             "dos quadris calculamos o ângulo do tronco em relação à vertical (0 graus em pé, "
             "90 graus deitado) e a altura do quadril na imagem (0 no topo, 1 na base). "
@@ -166,7 +165,6 @@ def main():
           h("Referências"),
           p("Organização Mundial da Saúde. Falls (fact sheet), 26 abr. 2021. "
             "https://www.who.int/news-room/fact-sheets/detail/falls<br/>"
-            "Material da disciplina: https://arnaldojr.github.io/cognitivecomputing/<br/>"
             "MediaPipe Pose Landmarker: "
             "https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker")]
     doc.build(c)

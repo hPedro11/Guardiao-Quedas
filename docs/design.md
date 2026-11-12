@@ -3,7 +3,7 @@
 **Objetivo.** Entrega da GS 2026.2 (CitizenTech) em Cognitive Computing: aplicação de visão computacional que detecta queda de idosos pela webcam, com demo ao vivo, métricas comprovadas e relatório.
 
 **Restrições.**
-- Usar apenas técnicas do material do professor (Labs 01 a 14).
+- Usar apenas técnicas vistas na disciplina.
 - Prazo de um dia: sem treino de modelo e sem dataset externo.
 - Precisa rodar em notebook comum, em tempo real.
 
