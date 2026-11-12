@@ -1,0 +1,9 @@
+opencv-python>=4.8
+numpy
+pandas
+matplotlib
+jupyter
+nbconvert
+ipykernel
+pytest
+markdown-pdf

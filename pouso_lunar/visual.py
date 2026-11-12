@@ -1,0 +1,87 @@
+"""Desenho da demo: crateras, painel lado a lado e minimapa com as trajetórias.
+
+Obs.: as fontes Hershey do OpenCV não têm acentos, por isso os textos
+desenhados na imagem são escritos sem acentuação.
+"""
+
+import cv2
+import numpy as np
+
+VERDE = (0, 200, 0)
+VERMELHO = (0, 0, 255)
+CIANO = (255, 255, 0)
+AMARELO = (0, 255, 255)
+BRANCO = (255, 255, 255)
+
+
+def em_bgr(img: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) if img.ndim == 2 else img.copy()
+
+
+def desenhar_crateras(img_bgr: np.ndarray, circulos, cor=AMARELO) -> np.ndarray:
+    saida = em_bgr(img_bgr)
+    for x, y, r in np.asarray(circulos).reshape(-1, 3):
+        cv2.circle(saida, (int(round(x)), int(round(y))), int(round(r)), cor, 1, cv2.LINE_AA)
+    return saida
+
+
+def escrever(img: np.ndarray, texto: str, pos, cor=BRANCO, escala: float = 0.55) -> None:
+    cv2.putText(img, texto, pos, cv2.FONT_HERSHEY_SIMPLEX, escala, cor, 1, cv2.LINE_AA)
+
+
+def caixa_escura(img: np.ndarray, x0: int, y0: int, x1: int, y1: int, alfa: float = 0.55) -> None:
+    """Escurece um retângulo (fundo do texto), legível sobre qualquer terreno.
+
+    (Um contorno preto mais grosso que o texto fica deslocado na fonte do OpenCV 5.)
+    """
+    roi = img[y0:y1, x0:x1]
+    roi[:] = (roi * (1 - alfa)).astype(img.dtype)
+
+
+def montar_painel(frame_bgr: np.ndarray, minimapa_bgr: np.ndarray, textos: list[str],
+                  cores: list | None = None) -> np.ndarray:
+    """Frame à esquerda, minimapa à direita (mesma altura), textos no canto do frame."""
+    esq = em_bgr(frame_bgr)
+    dir_ = em_bgr(minimapa_bgr)
+    if dir_.shape[0] != esq.shape[0]:
+        lado = round(dir_.shape[1] * esq.shape[0] / dir_.shape[0])
+        dir_ = cv2.resize(dir_, (lado, esq.shape[0]), interpolation=cv2.INTER_AREA)
+    painel = np.hstack([esq, dir_])
+    if textos:
+        caixa_escura(painel, 0, 0, 215, 12 + 22 * len(textos))
+    for i, t in enumerate(textos):
+        cor = cores[i] if cores and i < len(cores) else BRANCO
+        escrever(painel, t, (10, 24 + 22 * i), cor)
+    return painel
+
+
+class Minimapa:
+    """Versão reduzida do mapa, com conversão de coordenadas nos dois sentidos."""
+
+    def __init__(self, mapa: np.ndarray, lado: int = 480):
+        self.lado = lado
+        self.sx = lado / mapa.shape[1]
+        self.sy = lado / mapa.shape[0]
+        self.base = em_bgr(cv2.resize(mapa, (lado, lado), interpolation=cv2.INTER_AREA))
+
+    def para_mini(self, x: float, y: float) -> tuple[int, int]:
+        return int(round(x * self.sx)), int(round(y * self.sy))
+
+    def para_mapa(self, u: float, v: float) -> tuple[float, float]:
+        return u / self.sx, v / self.sy
+
+    def desenhar(self, traj_real, traj_est, alvo, quadro=None) -> np.ndarray:
+        """Trajetória real (verde), estimada (vermelho), alvo (ciano) e o
+        contorno da área vista pela câmera (`quadro`: 4 cantos em px do mapa)."""
+        img = self.base.copy()
+        # a real vai por baixo e mais grossa: quando a estimativa é boa, as duas se sobrepõem
+        for traj, cor, esp in ((traj_real, VERDE, 4), (traj_est, VERMELHO, 1)):
+            pts = [self.para_mini(x, y) for x, y in traj if np.isfinite(x) and np.isfinite(y)]
+            if len(pts) >= 2:
+                cv2.polylines(img, [np.array(pts, np.int32)], False, cor, esp, cv2.LINE_AA)
+        if quadro is not None:
+            q = np.array([self.para_mini(x, y) for x, y in quadro], np.int32)
+            cv2.polylines(img, [q], True, AMARELO, 1, cv2.LINE_AA)
+        if alvo is not None:
+            cv2.drawMarker(img, self.para_mini(*alvo), CIANO, cv2.MARKER_CROSS, 14, 2)
+        return img

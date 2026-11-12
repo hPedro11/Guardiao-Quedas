@@ -1,0 +1,8 @@
+{
+  "r_min": 5,
+  "r_max": 60,
+  "metodo": "sombra",
+  "limiar_sombra": 18,
+  "usar_clahe": false,
+  "janela_media": 21
+}

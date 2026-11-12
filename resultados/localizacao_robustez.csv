@@ -1,0 +1,85 @@
+fator,valor,metodo,taxa_sucesso
+rotação (graus),0.0,ORB,1.0
+rotação (graus),0.0,SIFT,1.0
+rotação (graus),0.0,Template,1.0
+rotação (graus),0.0,ORB sem equalização,0.9666666666666667
+rotação (graus),15.0,ORB,1.0
+rotação (graus),15.0,SIFT,1.0
+rotação (graus),15.0,Template,0.0
+rotação (graus),15.0,ORB sem equalização,0.8333333333333334
+rotação (graus),45.0,ORB,1.0
+rotação (graus),45.0,SIFT,1.0
+rotação (graus),45.0,Template,0.0
+rotação (graus),45.0,ORB sem equalização,0.8666666666666667
+rotação (graus),90.0,ORB,1.0
+rotação (graus),90.0,SIFT,1.0
+rotação (graus),90.0,Template,0.0
+rotação (graus),90.0,ORB sem equalização,0.9333333333333333
+rotação (graus),135.0,ORB,1.0
+rotação (graus),135.0,SIFT,1.0
+rotação (graus),135.0,Template,0.0
+rotação (graus),135.0,ORB sem equalização,0.8333333333333334
+rotação (graus),180.0,ORB,1.0
+rotação (graus),180.0,SIFT,1.0
+rotação (graus),180.0,Template,0.0
+rotação (graus),180.0,ORB sem equalização,0.9
+zoom,0.5,ORB,1.0
+zoom,0.5,SIFT,1.0
+zoom,0.5,Template,1.0
+zoom,0.5,ORB sem equalização,1.0
+zoom,0.7,ORB,1.0
+zoom,0.7,SIFT,1.0
+zoom,0.7,Template,1.0
+zoom,0.7,ORB sem equalização,1.0
+zoom,1.0,ORB,1.0
+zoom,1.0,SIFT,1.0
+zoom,1.0,Template,1.0
+zoom,1.0,ORB sem equalização,0.9666666666666667
+zoom,1.4,ORB,0.9333333333333333
+zoom,1.4,SIFT,1.0
+zoom,1.4,Template,1.0
+zoom,1.4,ORB sem equalização,0.23333333333333334
+zoom,2.0,ORB,0.6
+zoom,2.0,SIFT,1.0
+zoom,2.0,Template,1.0
+zoom,2.0,ORB sem equalização,0.03333333333333333
+ruído (sigma),0.0,ORB,1.0
+ruído (sigma),0.0,SIFT,1.0
+ruído (sigma),0.0,Template,1.0
+ruído (sigma),0.0,ORB sem equalização,0.9666666666666667
+ruído (sigma),5.0,ORB,1.0
+ruído (sigma),5.0,SIFT,0.9666666666666667
+ruído (sigma),5.0,Template,1.0
+ruído (sigma),5.0,ORB sem equalização,0.5666666666666667
+ruído (sigma),10.0,ORB,0.4666666666666667
+ruído (sigma),10.0,SIFT,0.3333333333333333
+ruído (sigma),10.0,Template,0.4666666666666667
+ruído (sigma),10.0,ORB sem equalização,0.3333333333333333
+ruído (sigma),20.0,ORB,0.1
+ruído (sigma),20.0,SIFT,0.0
+ruído (sigma),20.0,Template,0.06666666666666667
+ruído (sigma),20.0,ORB sem equalização,0.13333333333333333
+ruído (sigma),30.0,ORB,0.0
+ruído (sigma),30.0,SIFT,0.0
+ruído (sigma),30.0,Template,0.0
+ruído (sigma),30.0,ORB sem equalização,0.03333333333333333
+gama,0.5,ORB,1.0
+gama,0.5,SIFT,1.0
+gama,0.5,Template,1.0
+gama,0.5,ORB sem equalização,0.8333333333333334
+gama,0.75,ORB,1.0
+gama,0.75,SIFT,1.0
+gama,0.75,Template,1.0
+gama,0.75,ORB sem equalização,0.9
+gama,1.0,ORB,1.0
+gama,1.0,SIFT,1.0
+gama,1.0,Template,1.0
+gama,1.0,ORB sem equalização,0.9666666666666667
+gama,1.5,ORB,1.0
+gama,1.5,SIFT,1.0
+gama,1.5,Template,1.0
+gama,1.5,ORB sem equalização,0.2
+gama,2.0,ORB,0.8666666666666667
+gama,2.0,SIFT,0.9333333333333333
+gama,2.0,Template,1.0
+gama,2.0,ORB sem equalização,0.0
