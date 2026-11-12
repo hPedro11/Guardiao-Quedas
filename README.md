@@ -14,25 +14,10 @@ As duas etapas são **medidas contra gabaritos públicos**: o catálogo de crate
 
 ## Resultados principais
 
-**Detecção de crateras** (metade de teste do mapa, 562 crateras de 2 a 24 km do catálogo de Robbins):
+- **Crateras:** o detector de sombra e brilho acertou cerca de 4 em cada 10 crateras do catálogo da USGS, e quase 2 em cada 3 marcações dele eram crateras de verdade. O HoughCircles foi bem pior.
+- **Localização:** em 300 imagens de teste, o programa encontrou a posição da sonda em 3 de cada 4, com erro de uns 200 metros. O template matching só funcionou com a imagem sem rotação.
 
-| Método | Precisão | Recall | F1 |
-|---|---|---|---|
-| **Sombra-brilho** (escolhido) | **0,607** | **0,388** | **0,473** |
-| HoughCircles (melhor configuração) | 0,089 | 0,203 | 0,124 |
-
-**Localização** (300 imagens simuladas com rotação, zoom e degradações aleatórias; sucesso = erro < 1 km):
-
-| Método | Sucesso | Erro mediano | Tempo/imagem |
-|---|---|---|---|
-| **SIFT + homografia** | **75,3%** | **0,11 km** | 1205 ms |
-| **ORB + homografia** (usado na demo) | 74,7% | 0,18 km | 168 ms |
-| ORB sem equalização de histograma | 38,3% | 0,16 km | 35 ms |
-| Template matching (baseline) | 1,3% | 24,7 km | 189 ms |
-
-O erro mediano é calculado só sobre as imagens que o método conseguiu localizar. O do template, que localiza pouquíssimas, não é comparável.
-
-Os detalhes e a discussão estão em [docs/relatorio.pdf](docs/relatorio.pdf) e nos notebooks.
+Mais detalhes em [docs/relatorio.pdf](docs/relatorio.pdf) e nos notebooks.
 
 ## Como executar
 
@@ -117,7 +102,7 @@ A direção do sol foi medida nos dados: em 97% das crateras do catálogo, a met
 | Casamento | `knnMatch` (k = 2) com **teste da razão de Lowe** (0,75) |
 | Geometria | `findHomography` com **RANSAC** (5 px, no mínimo 15 inliers) |
 | Posição e rumo | Centro do frame projetado pela homografia; ângulo da sua parte linear |
-| Baseline | `matchTemplate` (`TM_CCOEFF_NORMED`) |
+| Comparação | `matchTemplate` (`TM_CCOEFF_NORMED`) |
 | Rastreamento | Depois da 1ª localização, busca só numa janela em volta da última posição |
 
 ### Câmera simulada
@@ -136,7 +121,7 @@ pouso_lunar/
   detector.py          detectores sombra-brilho e Hough
   localizador.py       ORB/SIFT + homografia; template matching
   simulador.py         câmera da sonda e trajetória de descida
-  metricas.py          casamento detecção × gabarito, P/R/F1, erro em km
+  metricas.py          compara as detecções com o catálogo e calcula o erro em km
   visual.py            desenho dos painéis e do minimapa
 notebooks/             análises (01 dados, 02 detecção, 03 localização)
 resultados/            figuras e CSVs de métricas gerados pelos notebooks

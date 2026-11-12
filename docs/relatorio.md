@@ -60,52 +60,25 @@ Um clique no minimapa escolhe um novo ponto de pouso.
 
 ## 4. Resultados
 
-### 4.1 Detecção de crateras (562 crateras da metade de teste)
+**Crateras.** Comparamos as crateras que o programa encontrou com o catálogo de crateras da USGS. O detector de sombra e brilho acertou cerca de **4 em cada 10 crateras** do catálogo, e quase **2 em cada 3 marcações** que ele fez eram crateras de verdade. O HoughCircles foi bem pior: a maioria dos círculos que ele marcou não era cratera.
 
-| Método | Precisão | Recall | F1 |
-|---|---|---|---|
-| **Sombra-brilho** | **0,61** | **0,39** | **0,47** |
-| HoughCircles (melhor configuração) | 0,09 | 0,20 | 0,12 |
-
-O detector processa o mapa inteiro (607 × 607 km) em cerca de 0,4 s. Ele vai melhor nas crateras de 4 a 8 km (F1 0,57).
-
-![Acertos (verde), falsos positivos (vermelho) e não detectadas (amarelo)](../resultados/deteccao_tile.png)
-
-### 4.2 Localização (300 imagens com rotação, altitude e iluminação aleatórias)
-
-Consideramos **sucesso** quando o erro de posição fica abaixo de 1 km.
-
-| Método | Sucesso | Erro mediano | Tempo por imagem |
-|---|---|---|---|
-| **ORB** (usado na demo) | **75%** | **0,18 km** | 0,17 s |
-| SIFT | 75% | 0,11 km | 1,2 s |
-| ORB sem equalização | 38% | 0,16 km | 0,04 s |
-| Template matching | 1% | - | 0,19 s |
-
-O erro mediano é calculado só sobre as imagens localizadas. Um erro de 0,18 km equivale a menos de 1 pixel do mapa.
-
-![Robustez a rotação, altitude, ruído e iluminação](../resultados/localizacao_robustez.png)
+**Localização da sonda.** Testamos 300 imagens da câmera, com a sonda em posições, alturas e ângulos diferentes. O programa encontrou a posição certa em **3 de cada 4 imagens**, com erro de uns **200 metros**. O template matching só funcionou quando a imagem não estava girada.
 
 ## 5. O que aprendemos
 
-- **Entender o problema antes de ajustar parâmetros.** O Hough parecia a escolha óbvia, mas falhava por um motivo físico (o sol baixo). Isso nos levou ao detector sombra-brilho, que quadruplicou o F1.
-- **A equalização de histograma foi decisiva.** O mapa lunar é escuro. Equalizar as imagens **dobrou** o sucesso da localização (38% → 75%), e no mar escuro ele foi de 11% para 71%.
-- **Pontos característicos lidam com rotação; o template não.** Com só 15° de rotação, o template matching já erra todas as imagens, enquanto o ORB acerta 100% em qualquer ângulo.
-- **ORB × SIFT:** os dois localizam a mesma fração de imagens. O SIFT erra menos, mas é 7 vezes mais lento, por isso a demo usa o ORB.
+- **Testar antes de escolher.** O HoughCircles parecia a escolha óbvia, mas não funcionou bem com o sol baixo. Olhando as imagens, percebemos o padrão de sombra e brilho e mudamos o método.
+- **A equalização de histograma fez muita diferença.** O mapa da Lua é escuro, e sem equalizar o programa errava muito mais a posição da sonda.
+- **ORB funciona mesmo com a imagem girada**, coisa que o template matching não faz.
 
-## 6. Limitações e próximos passos
+## 6. Limitações
 
-- **As imagens da câmera são simuladas** a partir do próprio mapa. Uma descida real teria outra iluminação, perspectiva inclinada e relevo 3D.
-- **Ruído forte** (σ ≥ 20) derruba a localização. Um filtro antes das features ou uma câmera melhor ajudariam.
-- O **mar**, liso e com poucos detalhes, é mais difícil (cerca de 70% de sucesso) que as **terras altas** (cerca de 80%).
-- **Próximos passos:**
-  - localizar a sonda pelo padrão das crateras detectadas;
-  - combinar a câmera com os sensores de movimento e o altímetro;
-  - rodar o sistema numa placa embarcada.
+- **As imagens da câmera são simuladas** a partir do próprio mapa. Uma descida de verdade teria outra iluminação e outro ângulo de visão.
+- **Imagens com muito ruído** atrapalham a localização.
+- O **mar**, liso e com poucos detalhes, é mais difícil de localizar que as **terras altas**.
 
 ## 7. Conclusão
 
-Com técnicas clássicas de visão computacional e dados reais da NASA/USGS, o sistema **detecta crateras com F1 de 0,47** e **localiza a sonda com erro mediano de 0,18 km em 75% das imagens**, com qualquer rotação. É uma versão simples, mas funcional, da tecnologia que permite pousos autônomos e precisos na Lua.
+Usando técnicas de processamento de imagem e dados reais da NASA/USGS, o programa consegue encontrar crateras e descobrir onde a sonda está na maioria das imagens, mesmo com a câmera girada. É uma versão simples da tecnologia que ajuda sondas a pousar sozinhas na Lua.
 
 ## Referências
 
